@@ -1,15 +1,16 @@
-import asyncio
 import time
 import mysql.connector
 from mysql.connector import Error
-from pyppeteer import launch
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
+from webdriver_manager.firefox import GeckoDriverManager
 
 # MySQL-Konfiguration
 DB_CONFIG = {
     'host': '202.61.192.15',        # Hostname der MySQL-Datenbank
-    'user': 'adele',             # Benutzername
-    'password': 'Stayless92@',     # Passwort
-    'database': 'adcell'   # Datenbankname
+    'user': 'adele',                # Benutzername
+    'password': 'Stayless92@',      # Passwort
+    'database': 'adcell'            # Datenbankname
 }
 
 CHECK_INTERVAL = 10  # Sekunden zwischen den Checks
@@ -44,24 +45,23 @@ def create_database_and_table():
     except Error as e:
         print(f"Error creating database or table: {e}")
 
-async def setup_browser():
-    """Richtet den virtuellen Browser ein."""
-    browser = await launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+def setup_browser():
+    """Richtet den Browser ein."""
+    options = Options()
+    options.headless = True  # Headless-Modus für den Hintergrund
+    browser = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
     return browser
 
-async def open_html_in_browser(browser, html_code):
+def open_html_in_browser(browser, html_code):
     """Öffnet den HTML-Code in einem virtuellen Browser."""
-    page = await browser.newPage()
     try:
-        await page.goto(f"data:text/html;charset=utf-8,{html_code}", timeout=10000)
-        await asyncio.sleep(2)  # Wartezeit für das Triggern
+        browser.get(f"data:text/html;charset=utf-8,{html_code}")
+        time.sleep(2)  # Wartezeit für das Triggern
         print("HTML code triggered successfully.")
     except Exception as e:
         print(f"Error triggering HTML code: {e}")
-    finally:
-        await page.close()
 
-async def check_and_trigger(browser):
+def check_and_trigger(browser):
     """Überprüft die Datenbank und triggert neue Einträge."""
     try:
         connection = mysql.connector.connect(**DB_CONFIG)
@@ -76,7 +76,7 @@ async def check_and_trigger(browser):
             html_code = row['html_code']
             print(f"Processing entry ID {entry_id}...")
 
-            await open_html_in_browser(browser, html_code)
+            open_html_in_browser(browser, html_code)
 
             # Status auf 2 setzen, nachdem der Code getriggert wurde
             cursor.execute("UPDATE html_tracking SET status = 2 WHERE id = %s", (entry_id,))
@@ -87,20 +87,19 @@ async def check_and_trigger(browser):
     except Error as e:
         print(f"Database error: {e}")
 
-async def main():
-    print("Starting virtual browser tracking tool...")
+def main():
+    print("Starting Selenium tracking tool...")
     create_database_and_table()
-    browser = await setup_browser()
+    browser = setup_browser()
 
     try:
         while True:
-            await check_and_trigger(browser)
+            check_and_trigger(browser)
             time.sleep(CHECK_INTERVAL)
     except KeyboardInterrupt:
         print("Stopping tracking tool...")
     finally:
-        await browser.close()
+        browser.quit()
 
-# Starte das Hauptprogramm
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
