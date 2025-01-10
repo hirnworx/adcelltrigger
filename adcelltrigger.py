@@ -1,10 +1,8 @@
+import asyncio
 import time
 import mysql.connector
 from mysql.connector import Error
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service
-from webdriver_manager.firefox import GeckoDriverManager
+from pyppeteer import launch
 
 # MySQL-Konfiguration
 DB_CONFIG = {
@@ -15,6 +13,7 @@ DB_CONFIG = {
 }
 
 CHECK_INTERVAL = 10  # Sekunden zwischen den Checks
+CHROMIUM_PATH = "/usr/bin/chromium"  # Pfad zur Chromium-Binärdatei
 
 def create_database_and_table():
     """Erstellt die Datenbank und Tabelle, falls sie nicht existieren."""
@@ -46,24 +45,28 @@ def create_database_and_table():
     except Error as e:
         print(f"Error creating database or table: {e}")
 
-def setup_browser():
-    """Richtet den Browser ein."""
-    options = Options()
-    options.headless = True  # Headless-Modus für den Hintergrund
-    service = Service(GeckoDriverManager().install())  # GeckoDriver mit Service
-    browser = webdriver.Firefox(service=service, options=options)
+async def setup_browser():
+    """Richtet den virtuellen Browser ein."""
+    browser = await launch(
+        headless=True,
+        executablePath=CHROMIUM_PATH,  # Pfad zur Chromium-Binärdatei
+        args=['--no-sandbox', '--disable-setuid-sandbox']
+    )
     return browser
 
-def open_html_in_browser(browser, html_code):
+async def open_html_in_browser(browser, html_code):
     """Öffnet den HTML-Code in einem virtuellen Browser."""
+    page = await browser.newPage()
     try:
-        browser.get(f"data:text/html;charset=utf-8,{html_code}")
-        time.sleep(2)  # Wartezeit für das Triggern
+        await page.goto(f"data:text/html;charset=utf-8,{html_code}", timeout=10000)
+        await asyncio.sleep(2)  # Wartezeit für das Triggern
         print("HTML code triggered successfully.")
     except Exception as e:
         print(f"Error triggering HTML code: {e}")
+    finally:
+        await page.close()
 
-def check_and_trigger(browser):
+async def check_and_trigger(browser):
     """Überprüft die Datenbank und triggert neue Einträge."""
     try:
         connection = mysql.connector.connect(**DB_CONFIG)
@@ -78,7 +81,7 @@ def check_and_trigger(browser):
             html_code = row['html_code']
             print(f"Processing entry ID {entry_id}...")
 
-            open_html_in_browser(browser, html_code)
+            await open_html_in_browser(browser, html_code)
 
             # Status auf 2 setzen, nachdem der Code getriggert wurde
             cursor.execute("UPDATE html_tracking SET status = 2 WHERE id = %s", (entry_id,))
@@ -89,19 +92,20 @@ def check_and_trigger(browser):
     except Error as e:
         print(f"Database error: {e}")
 
-def main():
-    print("Starting Selenium tracking tool...")
+async def main():
+    print("Starting virtual browser tracking tool...")
     create_database_and_table()
-    browser = setup_browser()
+    browser = await setup_browser()
 
     try:
         while True:
-            check_and_trigger(browser)
+            await check_and_trigger(browser)
             time.sleep(CHECK_INTERVAL)
     except KeyboardInterrupt:
         print("Stopping tracking tool...")
     finally:
-        browser.quit()
+        await browser.close()
 
+# Starte das Hauptprogramm
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
