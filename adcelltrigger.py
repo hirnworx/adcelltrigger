@@ -3,6 +3,7 @@ import mysql.connector
 from mysql.connector import Error
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
 
 # MySQL-Konfiguration
@@ -49,7 +50,8 @@ def setup_browser():
     """Richtet den Browser ein."""
     options = Options()
     options.headless = True  # Headless-Modus für den Hintergrund
-    browser = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
+    service = Service(GeckoDriverManager().install())  # GeckoDriver mit Service
+    browser = webdriver.Firefox(service=service, options=options)
     return browser
 
 def open_html_in_browser(browser, html_code):
