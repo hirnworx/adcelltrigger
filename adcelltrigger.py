@@ -13,7 +13,6 @@ DB_CONFIG = {
 }
 
 CHECK_INTERVAL = 10  # Sekunden zwischen den Checks
-CHROMIUM_PATH = "/usr/bin/chromium"  # Pfad zur Chromium-Binärdatei
 
 def create_database_and_table():
     """Erstellt die Datenbank und Tabelle, falls sie nicht existieren."""
@@ -48,9 +47,8 @@ def create_database_and_table():
 async def setup_browser():
     """Richtet den virtuellen Browser ein."""
     browser = await launch(
-        headless=True,
-        executablePath=CHROMIUM_PATH,  # Pfad zur Chromium-Binärdatei
-        args=['--no-sandbox', '--disable-setuid-sandbox']
+        headless=True,  # Headless-Modus (kein GUI)
+        args=['--no-sandbox', '--disable-setuid-sandbox'],  # Für Hosting-Umgebungen erforderlich
     )
     return browser
 
