@@ -47,8 +47,16 @@ def create_database_and_table():
 async def setup_browser():
     """Richtet den virtuellen Browser ein."""
     browser = await launch(
-        headless=True,  # Headless-Modus (kein GUI)
-        args=['--no-sandbox', '--disable-setuid-sandbox'],  # Für Hosting-Umgebungen erforderlich
+        headless=True,
+        dumpio=True,  # Aktiviert Protokollausgabe
+        args=[
+            '--no-sandbox',                 # Verhindert Berechtigungsprobleme
+            '--disable-setuid-sandbox',     # Deaktiviert Sandboxing
+            '--disable-dev-shm-usage',      # Behebt Speicherprobleme
+            '--disable-gpu',                # Deaktiviert GPU (nicht erforderlich im Headless-Modus)
+            '--no-zygote',                  # Verhindert Probleme mit Prozessen
+            '--single-process'              # Nutzt einen einzelnen Prozess (reduziert Ressourcenverbrauch)
+        ],
     )
     return browser
 
