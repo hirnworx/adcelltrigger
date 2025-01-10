@@ -1,9 +1,2 @@
 mysql-connector-python==8.0.33  # Für MySQL-Datenbankzugriff
 pyppeteer==1.0.2                # Für die Steuerung von Chromium
-certifi==2024.12.14             # Aktuelle SSL-Zertifikate für sichere Verbindungen
-charset-normalizer==3.4.1       # Unterstützung für die Dekodierung von Textdaten
-idna==3.10                      # Unterstützung für internationale Domainnamen
-requests==2.32.3                # Für HTTP-Anfragen (falls benötigt)
-tqdm==4.67.1                    # Fortschrittsbalken für Downloads
-urllib3==2.3.0                  # HTTP-Bibliothek, von Pyppeteer verwendet
-websockets==10.4                # WebSocket-Unterstützung für Pyppeteer
